@@ -146,3 +146,67 @@ def create_draft_reply(service, to_email, subject, reply_body, thread_id):
     )
 
     return draft
+
+
+def send_reply(service, to_email, subject, reply_body, thread_id):
+    """
+    Sends a Gmail reply in the same conversation thread.
+    """
+
+    _, email_address = parseaddr(to_email)
+
+    message = MIMEText(reply_body)
+
+    message["to"] = email_address
+    message["subject"] = f"Re: {subject}"
+
+    raw = base64.urlsafe_b64encode(
+        message.as_bytes()
+    ).decode()
+
+    sent_message = (
+        service.users()
+        .messages()
+        .send(
+            userId="me",
+            body={
+                "raw": raw,
+                "threadId": thread_id
+            }
+        )
+        .execute()
+    )
+
+    return sent_message
+
+
+def get_email_by_id(service, message_id):
+    full = (
+        service.users()
+        .messages()
+        .get(
+            userId="me",
+            id=message_id,
+            format="full"
+        )
+        .execute()
+    )
+
+    headers = full["payload"]["headers"]
+
+    subject = ""
+    sender = ""
+
+    for h in headers:
+        if h["name"] == "Subject":
+            subject = h["value"]
+        elif h["name"] == "From":
+            sender = h["value"]
+
+    return {
+        "id": message_id,
+        "threadId": full["threadId"],
+        "subject": subject,
+        "from": sender,
+        "body": extract_body(full["payload"]),
+    }

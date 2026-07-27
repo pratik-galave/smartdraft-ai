@@ -134,7 +134,7 @@ Body:
 # ----------------------------------------------------
 
 
-def generate_reply(email):
+def generate_reply(email, instruction=None):
     filled_prompt = SYSTEM_PROMPT.format(
         your_name=YOUR_NAME
     )
@@ -146,6 +146,9 @@ Subject:
 Email:
 {email['body']}
 """
+
+    if instruction:
+        user_prompt += f"\nAdditional Instruction:\n{instruction}\n"
 
     return call_llm(
         filled_prompt,

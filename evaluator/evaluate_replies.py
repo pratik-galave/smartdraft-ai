@@ -76,22 +76,9 @@ totals = {
 # Evaluate
 # ----------------------------------------------------
 
-for item in replies:
-
-    # Skip emails that intentionally received no reply
-    if item.get("status") == "SKIPPED":
-        print(f"Skipping evaluation: {item.get('subject', item['id'])}")
-        continue
-
-    if "original_email" not in item:
-        print(f"Skipping malformed entry: {item.get('id')}")
-        continue
-
-    email = item["original_email"]
-    reply = item["generated_reply"]
-
+def evaluate_single_reply(email, reply):
     if not reply:
-        continue
+        return None
 
     user_prompt = f"""
 Original Email
@@ -136,8 +123,27 @@ Generated Reply
         )
 
     try:
-        evaluation = json.loads(result)
+        return json.loads(result)
     except json.JSONDecodeError:
+        return None
+
+
+for item in replies:
+
+    # Skip emails that intentionally received no reply
+    if item.get("status") == "SKIPPED":
+        print(f"Skipping evaluation: {item.get('subject', item['id'])}")
+        continue
+
+    if "original_email" not in item:
+        print(f"Skipping malformed entry: {item.get('id')}")
+        continue
+
+    email = item["original_email"]
+    reply = item["generated_reply"]
+
+    evaluation = evaluate_single_reply(email, reply)
+    if not evaluation:
         print(f"Failed to parse evaluation for {item['id']}")
         continue
 
