@@ -17,9 +17,33 @@ export default function Inbox() {
     setError(null);
     try {
       const data = await api.getEmails();
-      // Assume data is an array of emails or data.emails
       const emailsList = Array.isArray(data) ? data : (data.emails || []);
-      setEmails(emailsList);
+      
+      const mappedEmails = emailsList.map(email => {
+        // Parse 'Name <email@example.com>' or just 'email@example.com'
+        const fromHeader = email.from || '';
+        let senderName = fromHeader;
+        let senderEmail = fromHeader;
+        const emailMatch = fromHeader.match(/<([^>]+)>/);
+        if (emailMatch) {
+          senderEmail = emailMatch[1];
+          senderName = fromHeader.replace(/<[^>]+>/, '').trim().replace(/"/g, '') || senderEmail;
+        }
+        
+        return {
+          id: email.id,
+          subject: email.subject || 'No Subject',
+          senderName: senderName,
+          senderEmail: senderEmail,
+          aiSummary: email.body ? email.body.substring(0, 100) + '...' : 'No content',
+          status: 'Pending',
+          needsReply: true,
+          date: 'Just now',
+          originalData: email
+        };
+      });
+
+      setEmails(mappedEmails);
     } catch (err) {
       console.error(err);
       setError('Sync Failed — Unable to fetch latest emails. Retrying in 30 seconds...');

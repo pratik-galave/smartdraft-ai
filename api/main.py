@@ -56,7 +56,8 @@ def get_emails(source: Optional[str] = Query(None)):
         else:
             return load_json("data/emails.json")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error fetching emails: {e}")
+        raise HTTPException(status_code=500, detail={"error": "Failed to fetch emails", "message": str(e)})
 
 def _get_email(email_id: str):
     # Try finding in JSON first
@@ -90,7 +91,8 @@ def generate(email_id: str):
             "scores": scores
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error generating reply: {e}")
+        raise HTTPException(status_code=500, detail={"error": "Generation failed", "message": str(e)})
 
 
 @app.post("/emails/{email_id}/regenerate")
@@ -110,7 +112,8 @@ def regenerate(email_id: str, request: RegenerateRequest):
             "scores": scores
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error regenerating reply: {e}")
+        raise HTTPException(status_code=500, detail={"error": "Regeneration failed", "message": str(e)})
 
 
 @app.post("/emails/{email_id}/approve")
@@ -140,7 +143,8 @@ def approve(email_id: str, request: ApproveRequest):
         else:
             raise HTTPException(status_code=400, detail="Invalid action. Must be 'draft' or 'send'.")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error approving email: {e}")
+        raise HTTPException(status_code=500, detail={"error": "Approval failed", "message": str(e)})
 
 
 @app.get("/emails/{email_id}/scores")

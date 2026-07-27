@@ -18,7 +18,7 @@ async function request(endpoint, options = {}) {
 }
 
 export const api = {
-  getEmails: () => request('/emails'),
+  getEmails: () => request('/emails?source=gmail'),
   
   generateDraft: (id) => request(`/emails/${id}/generate`, {
     method: 'POST',
@@ -26,12 +26,12 @@ export const api = {
 
   regenerateDraft: (id, customInstructions) => request(`/emails/${id}/regenerate`, {
     method: 'POST',
-    body: JSON.stringify({ instructions: customInstructions }),
+    body: JSON.stringify({ instruction: customInstructions }),
   }),
 
-  approveEmail: (id, actionType) => request(`/emails/${id}/approve`, {
+  approveEmail: (id, actionType, draftText) => request(`/emails/${id}/approve`, {
     method: 'POST',
-    body: JSON.stringify({ action: actionType }),
+    body: JSON.stringify({ action: actionType, reply_body: draftText }),
   }),
 
   getScores: (id) => request(`/emails/${id}/scores`),

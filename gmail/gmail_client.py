@@ -10,12 +10,21 @@ from googleapiclient.discovery import build
 
 SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CREDENTIALS_PATH = os.path.join(BASE_DIR, "credentials.json")
+TOKEN_PATH = os.path.join(BASE_DIR, "token.pickle")
+
+_cached_service = None
 
 def get_service():
+    global _cached_service
+    if _cached_service is not None:
+        return _cached_service
+
     creds = None
 
-    if os.path.exists("token.pickle"):
-        with open("token.pickle", "rb") as f:
+    if os.path.exists(TOKEN_PATH):
+        with open(TOKEN_PATH, "rb") as f:
             creds = pickle.load(f)
 
     if creds and creds.expired and creds.refresh_token:
@@ -23,16 +32,17 @@ def get_service():
 
     elif not creds or not creds.valid:
         flow = InstalledAppFlow.from_client_secrets_file(
-            "credentials.json",
+            CREDENTIALS_PATH,
             SCOPES
         )
 
         creds = flow.run_local_server(port=0)
 
-        with open("token.pickle", "wb") as f:
+        with open(TOKEN_PATH, "wb") as f:
             pickle.dump(creds, f)
 
-    return build("gmail", "v1", credentials=creds)
+    _cached_service = build("gmail", "v1", credentials=creds)
+    return _cached_service
 
 
 def extract_body(payload):

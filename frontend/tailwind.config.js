@@ -70,15 +70,15 @@ export default {
           "margin-desktop": "32px"
       },
       "fontFamily": {
-          "headline-lg-mobile": ["Inter"],
-          "label-md": ["Inter"],
-          "body-sm": ["Inter"],
-          "label-sm": ["Inter"],
-          "headline-md": ["Inter"],
-          "headline-lg": ["Inter"],
-          "display-lg": ["Inter"],
-          "body-lg": ["Inter"],
-          "body-md": ["Inter"]
+          "headline-lg-mobile": ["Poppins"],
+          "label-md": ["Poppins"],
+          "body-sm": ["Poppins"],
+          "label-sm": ["Poppins"],
+          "headline-md": ["Poppins"],
+          "headline-lg": ["Poppins"],
+          "display-lg": ["Poppins"],
+          "body-lg": ["Poppins"],
+          "body-md": ["Poppins"]
       },
       "fontSize": {
           "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],

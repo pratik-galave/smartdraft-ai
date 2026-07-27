@@ -24,37 +24,47 @@ export default function EmailDetail() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    // In a real app we would have GET /emails/{id} but since it's not specified,
-    // we assume we can GET /emails and filter or the backend provides it.
-    // For now, let's fetch emails and get the one with this id,
-    // and also fetch the draft and scores.
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [emailsData, scoresData] = await Promise.all([
-          api.getEmails(),
-          api.getScores(id)
-        ]);
-        
+        const emailsData = await api.getEmails();
         const emailsList = Array.isArray(emailsData) ? emailsData : (emailsData.emails || []);
         const currentEmail = emailsList.find(e => e.id.toString() === id);
         
         if (currentEmail) {
+          const fromHeader = currentEmail.from || '';
+          let senderName = fromHeader;
+          let senderEmail = fromHeader;
+          const emailMatch = fromHeader.match(/<([^>]+)>/);
+          if (emailMatch) {
+            senderEmail = emailMatch[1];
+            senderName = fromHeader.replace(/<[^>]+>/, '').trim().replace(/"/g, '') || senderEmail;
+          }
+          currentEmail.senderName = senderName;
+          currentEmail.senderEmail = senderEmail;
+          currentEmail.date = currentEmail.date || 'Just now';
+          currentEmail.content = currentEmail.body;
           setEmailDetails(currentEmail);
-          setDrafts(currentEmail.drafts || [{ text: currentEmail.aiSummary || 'Draft text...', note: 'v1' }]);
+          
+          // Try to load scores if they exist
+          try {
+            const scoresData = await api.getScores(id);
+            if (scoresData && scoresData.scores) {
+              const mappedScores = [
+                { name: 'Relevance', value: scoresData.scores.relevance * 20 },
+                { name: 'Tone', value: scoresData.scores.tone * 20 },
+                { name: 'Completeness', value: scoresData.scores.completeness * 20 },
+                { name: 'Accuracy', value: scoresData.scores.accuracy * 20 },
+                { name: 'Conciseness', value: scoresData.scores.conciseness * 20 }
+              ];
+              setScores(mappedScores);
+              setOverallScore(scoresData.overall * 20);
+            }
+          } catch (scoreErr) {
+            console.log('No previous scores found.');
+          }
         } else {
           setError('Email not found.');
-        }
-
-        if (scoresData) {
-          setScores(scoresData.details || [
-            { name: 'Relevance', value: 95 },
-            { name: 'Tone', value: 90 },
-            { name: 'Completeness', value: 92 },
-            { name: 'Accuracy', value: 88 },
-            { name: 'Conciseness', value: 95 }
-          ]);
-          setOverallScore(scoresData.overall || 92);
         }
       } catch (err) {
         console.error(err);
@@ -63,15 +73,60 @@ export default function EmailDetail() {
         setIsLoading(false);
       }
     };
-    
     fetchData();
   }, [id]);
 
+  const handleGenerate = async () => {
+    setIsRegenerating(true);
+    try {
+      const response = await api.generateDraft(id);
+      if (response.reply) {
+        setDrafts(prev => [...prev, { text: response.reply, note: 'Initial AI Draft' }]);
+      }
+      if (response.scores) {
+        const mappedScores = [
+          { name: 'Relevance', value: response.scores.relevance * 20 },
+          { name: 'Tone', value: response.scores.tone * 20 },
+          { name: 'Completeness', value: response.scores.completeness * 20 },
+          { name: 'Accuracy', value: response.scores.accuracy * 20 },
+          { name: 'Conciseness', value: response.scores.conciseness * 20 }
+        ];
+        setScores(mappedScores);
+        setOverallScore(
+          (response.scores.relevance + response.scores.tone + response.scores.completeness + response.scores.accuracy + response.scores.conciseness) / 5 * 20
+        );
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Failed to generate draft.');
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
   const handleRegenerate = async (customInstructions) => {
+    if (!drafts.length) {
+      return handleGenerate();
+    }
     setIsRegenerating(true);
     try {
       const response = await api.regenerateDraft(id, customInstructions);
-      setDrafts(prev => [...prev, { text: response.text || 'New drafted text...', note: customInstructions ? `Custom: ${customInstructions}` : `v${prev.length + 1}` }]);
+      if (response.reply) {
+        setDrafts(prev => [...prev, { text: response.reply, note: customInstructions ? `Custom: ${customInstructions}` : `v${prev.length + 1}` }]);
+      }
+      if (response.scores) {
+        const mappedScores = [
+          { name: 'Relevance', value: response.scores.relevance * 20 },
+          { name: 'Tone', value: response.scores.tone * 20 },
+          { name: 'Completeness', value: response.scores.completeness * 20 },
+          { name: 'Accuracy', value: response.scores.accuracy * 20 },
+          { name: 'Conciseness', value: response.scores.conciseness * 20 }
+        ];
+        setScores(mappedScores);
+        setOverallScore(
+          (response.scores.relevance + response.scores.tone + response.scores.completeness + response.scores.accuracy + response.scores.conciseness) / 5 * 20
+        );
+      }
     } catch (err) {
       console.error(err);
       setError('Failed to regenerate draft.');
@@ -80,9 +135,18 @@ export default function EmailDetail() {
     }
   };
 
+  const handleDraftChange = (index, newText) => {
+    setDrafts(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], text: newText };
+      return updated;
+    });
+  };
+
   const handleApproveAndSend = async () => {
     try {
-      await api.approveEmail(id, 'send');
+      const currentDraftText = drafts.length > 0 ? drafts[drafts.length - 1].text : '';
+      await api.approveEmail(id, 'send', currentDraftText);
       setIsModalOpen(false);
       navigate('/');
     } catch (err) {
@@ -94,7 +158,8 @@ export default function EmailDetail() {
 
   const handleSaveDraft = async () => {
     try {
-      await api.approveEmail(id, 'draft');
+      const currentDraftText = drafts.length > 0 ? drafts[drafts.length - 1].text : '';
+      await api.approveEmail(id, 'draft', currentDraftText);
       navigate('/');
     } catch (err) {
       console.error(err);
@@ -160,6 +225,7 @@ export default function EmailDetail() {
             drafts={drafts} 
             onRegenerate={handleRegenerate}
             isRegenerating={isRegenerating}
+            onDraftChange={handleDraftChange}
           />
         </div>
 

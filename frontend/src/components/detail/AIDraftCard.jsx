@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function AIDraftCard({ drafts, onRegenerate, isRegenerating }) {
+export default function AIDraftCard({ drafts, onRegenerate, isRegenerating, onDraftChange }) {
   const [activeTab, setActiveTab] = useState(drafts.length - 1);
   const [customInstructions, setCustomInstructions] = useState('');
   
@@ -59,7 +59,7 @@ export default function AIDraftCard({ drafts, onRegenerate, isRegenerating }) {
             className="w-full flex-1 bg-transparent border-none p-0 focus:ring-0 font-body-md text-body-md text-on-surface resize-none leading-relaxed" 
             placeholder="Type your reply here..."
             value={currentDraft.text}
-            readOnly
+            onChange={(e) => onDraftChange(activeTab, e.target.value)}
           />
         )}
       </div>

@@ -15,6 +15,10 @@ from gmail.gmail_client import (
 # Configuration
 # ----------------------------------------------------
 
+def get_gmail_service():
+    return get_service()
+
+
 USE_GMAIL = True          # True -> Gmail | False -> data/emails.json
 YOUR_NAME = os.getenv("YOUR_NAME", "Pratik")
 
@@ -158,102 +162,84 @@ Email:
 
 
 # ----------------------------------------------------
-# Load Emails
+# Main Execution
 # ----------------------------------------------------
 
-if USE_GMAIL:
+def main():
+    if USE_GMAIL:
+        service = get_gmail_service()
+        emails = fetch_unread_emails(
+            service,
+            max_results=5,
+        )
+        print(f"Fetched {len(emails)} unread emails from Gmail.")
+    else:
+        with open(EMAILS_FILE, "r", encoding="utf-8") as f:
+            emails = json.load(f)
+        print(f"Loaded {len(emails)} emails from dataset.")
 
-    service = get_service()
+    generated_replies = []
 
-    emails = fetch_unread_emails(
-        service,
-        max_results=5,
-    )
+    for email in emails:
+        print("\n" + "=" * 60)
+        print(f"Processing: {email['subject']}")
+        print("=" * 60)
 
-    print(f"Fetched {len(emails)} unread emails from Gmail.")
+        if not should_reply(email):
+            print("Skipped (no reply required).")
+            generated_replies.append(
+                {
+                    "id": email["id"],
+                    "status": "SKIPPED",
+                    "subject": email["subject"],
+                    "generated_reply": None,
+                }
+            )
+            continue
 
-else:
+        print("Generating reply...")
+        reply = generate_reply(email)
 
-    with open(EMAILS_FILE, "r", encoding="utf-8") as f:
-        emails = json.load(f)
-
-    print(f"Loaded {len(emails)} emails from dataset.")
-
-# ----------------------------------------------------
-# Main Loop
-# ----------------------------------------------------
-
-generated_replies = []
-
-for email in emails:
-
-    print("\n" + "=" * 60)
-    print(f"Processing: {email['subject']}")
-    print("=" * 60)
-
-    if not should_reply(email):
-
-        print("Skipped (no reply required).")
+        if USE_GMAIL:
+            service = get_gmail_service()
+            create_draft_reply(
+                service=service,
+                to_email=email["from"],
+                subject=email["subject"],
+                reply_body=reply,
+                thread_id=email["threadId"],
+            )
+            print("✓ Gmail draft created.")
 
         generated_replies.append(
             {
                 "id": email["id"],
-                "status": "SKIPPED",
-                "subject": email["subject"],
-                "generated_reply": None,
+                "original_email": {
+                    "subject": email["subject"],
+                    "body": email["body"],
+                },
+                "generated_reply": reply,
+                "status": "REPLIED",
             }
         )
 
-        continue
-
-    print("Generating reply...")
-
-    reply = generate_reply(email)
-
-    if USE_GMAIL:
-
-        create_draft_reply(
-            service=service,
-            to_email=email["from"],
-            subject=email["subject"],
-            reply_body=reply,
-            thread_id=email["threadId"],
+    os.makedirs("data", exist_ok=True)
+    with open(
+        OUTPUT_FILE,
+        "w",
+        encoding="utf-8",
+    ) as f:
+        json.dump(
+            generated_replies,
+            f,
+            indent=4,
+            ensure_ascii=False,
         )
 
-        print("✓ Gmail draft created.")
+    print("\n" + "=" * 60)
+    print(f"Processed : {len(emails)} emails")
+    print(f"Saved     : {OUTPUT_FILE}")
+    print("=" * 60)
 
-    generated_replies.append(
-        {
-            "id": email["id"],
-            "original_email": {
-                "subject": email["subject"],
-                "body": email["body"],
-            },
-            "generated_reply": reply,
-            "status": "REPLIED",
-        }
-    )
-
-# ----------------------------------------------------
-# Save Replies
-# ----------------------------------------------------
-
-os.makedirs("data", exist_ok=True)
-
-with open(
-    OUTPUT_FILE,
-    "w",
-    encoding="utf-8",
-) as f:
-
-    json.dump(
-        generated_replies,
-        f,
-        indent=4,
-        ensure_ascii=False,
-    )
-
-print("\n" + "=" * 60)
-print(f"Processed : {len(emails)} emails")
-print(f"Saved     : {OUTPUT_FILE}")
-print("=" * 60)
+if __name__ == "__main__":
+    main()
