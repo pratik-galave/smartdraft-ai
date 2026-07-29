@@ -46,6 +46,12 @@ export default function EmailDetail() {
           currentEmail.content = currentEmail.body;
           setEmailDetails(currentEmail);
           
+          if (currentEmail.generated_reply) {
+            setDrafts([{ text: currentEmail.generated_reply, note: 'Initial AI Draft' }]);
+          } else {
+            setDrafts([]);
+          }
+          
           // Try to load scores if they exist
           try {
             const scoresData = await api.getScores(id);

@@ -30,14 +30,19 @@ export default function Inbox() {
           senderName = fromHeader.replace(/<[^>]+>/, '').trim().replace(/"/g, '') || senderEmail;
         }
         
+        let status = 'Pending';
+        if (email.reply_status === 'REPLIED') status = 'Generated';
+        if (email.reply_status === 'SKIPPED') status = 'Skipped';
+
         return {
           id: email.id,
           subject: email.subject || 'No Subject',
           senderName: senderName,
           senderEmail: senderEmail,
           aiSummary: email.body ? email.body.substring(0, 100) + '...' : 'No content',
-          status: 'Pending',
-          needsReply: true,
+          status: status,
+          needsReply: status !== 'Skipped',
+          qualityScore: email.quality_score,
           date: 'Just now',
           originalData: email
         };

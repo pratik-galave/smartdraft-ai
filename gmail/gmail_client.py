@@ -123,6 +123,63 @@ def fetch_unread_emails(service, max_results=5):
 
     return emails
 
+def fetch_sent_emails(service, max_results=500):
+    """
+    Fetches the user's previously sent emails for the RAG vector store.
+    """
+    response = (
+        service.users()
+        .messages()
+        .list(
+            userId="me",
+            labelIds=["SENT"],
+            maxResults=max_results,
+        )
+        .execute()
+    )
+
+    messages = response.get("messages", [])
+    emails = []
+
+    for message in messages:
+        try:
+            full = (
+                service.users()
+                .messages()
+                .get(
+                    userId="me",
+                    id=message["id"],
+                    format="full"
+                )
+                .execute()
+            )
+
+            headers = full["payload"]["headers"]
+            subject = ""
+            recipient = ""
+
+            for h in headers:
+                if h["name"] == "Subject":
+                    subject = h["value"]
+                elif h["name"] == "To":
+                    recipient = h["value"]
+
+            body = extract_body(full["payload"])
+            if body and body.strip():
+                emails.append(
+                    {
+                        "id": message["id"],
+                        "threadId": full["threadId"],
+                        "subject": subject,
+                        "to": recipient,
+                        "body": body.strip(),
+                    }
+                )
+        except Exception as e:
+            print(f"Failed to fetch or parse sent email {message['id']}: {e}")
+
+    return emails
+
 def create_draft_reply(service, to_email, subject, reply_body, thread_id):
     """
     Creates a Gmail draft reply in the same conversation thread.

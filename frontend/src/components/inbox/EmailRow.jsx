@@ -35,9 +35,16 @@ export default function EmailRow({ email, isSelected, onSelect }) {
       </td>
       <td className="p-4 align-top">
         <div className="flex flex-col gap-2 items-start">
+          {email.status === 'Skipped' && (
+            <div className="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded-full font-label-sm text-[11px] font-semibold border border-outline-variant/30 flex items-center gap-1">
+              <span className="material-symbols-outlined text-[12px]">block</span>
+              AI Triage: SKIP
+            </div>
+          )}
           {email.status === 'Generated' && (
-            <div className="bg-primary/10 text-primary-fixed-variant px-2 py-0.5 rounded-full font-label-sm text-[11px] font-semibold border border-primary/20">
-              Generated
+            <div className="bg-primary/10 text-primary-fixed-variant px-2 py-0.5 rounded-full font-label-sm text-[11px] font-semibold border border-primary/20 flex items-center gap-1">
+              <span className="material-symbols-outlined text-[12px]">edit_document</span>
+              Draft Ready
             </div>
           )}
           {email.status === 'Pending' && (
@@ -45,20 +52,23 @@ export default function EmailRow({ email, isSelected, onSelect }) {
               Pending
             </div>
           )}
-          {email.status === 'Processed' && (
-            <div className="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded-full font-label-sm text-[11px] font-semibold border border-outline-variant/30">
-              Processed
+          
+          {email.qualityScore != null && (
+            <div className={`px-2 py-0.5 rounded-full font-label-sm text-[11px] font-semibold border flex items-center gap-1
+              ${email.qualityScore >= 80 ? 'bg-green-500/10 text-green-700 border-green-500/20' : 
+                email.qualityScore >= 60 ? 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20' : 
+                'bg-red-500/10 text-red-700 border-red-500/20'}`}
+            >
+              <span className="material-symbols-outlined text-[12px]">
+                {email.qualityScore >= 80 ? 'check_circle' : email.qualityScore >= 60 ? 'warning' : 'error'}
+              </span>
+              Score: {email.qualityScore}/100
             </div>
           )}
 
           {email.needsReply && (
             <div className="bg-secondary-fixed/50 text-on-surface px-2 py-0.5 rounded-full font-label-sm text-[11px]">
               Needs Reply
-            </div>
-          )}
-          {email.tone && (
-            <div className="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded-full font-label-sm text-[10px]">
-              {email.tone}
             </div>
           )}
         </div>

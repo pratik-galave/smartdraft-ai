@@ -24,8 +24,10 @@ export default function OriginalEmailCard({ senderName, senderEmail, date, conte
           <span className="font-body-sm text-body-sm text-secondary">{date}</span>
         </div>
       </div>
-      <div className="p-6 font-body-md text-body-md text-on-surface whitespace-pre-line leading-relaxed flex-1">
-        {content}
+      <div className="p-6 flex-1 overflow-y-auto">
+        <div className="font-mono text-[13px] text-on-surface whitespace-pre-wrap leading-relaxed bg-surface-container-lowest p-4 rounded-lg border border-outline-variant/30 overflow-x-auto shadow-inner">
+          {content}
+        </div>
       </div>
       
       {attachments.length > 0 && (
