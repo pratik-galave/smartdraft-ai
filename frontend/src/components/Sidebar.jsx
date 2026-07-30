@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 export default function Sidebar() {
   return (
@@ -16,7 +17,7 @@ export default function Sidebar() {
           </div>
         </div>
         {/* CTA */}
-        <button className="w-full bg-primary-container text-on-primary font-label-md text-label-md py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-primary-container/90 transition-colors shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
+        <button onClick={() => toast('This feature is coming soon!', { icon: '🚧' })} className="w-full bg-primary-container text-on-primary font-label-md text-label-md py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-primary-container/90 transition-colors shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
           <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>add</span>
           Compose New
         </button>
@@ -29,23 +30,23 @@ export default function Sidebar() {
           Inbox
           <span className="ml-auto bg-primary-container text-on-primary text-[10px] px-2 py-0.5 rounded-full">12</span>
         </NavLink>
-        <a href="#" className="text-secondary-fixed-dim hover:bg-on-secondary-fixed-variant/50 hover:bg-on-secondary-fixed-variant transition-colors duration-200 rounded-lg px-4 py-3 flex items-center gap-3 font-label-md text-label-md">
+        <a href="#" onClick={(e) => { e.preventDefault(); toast('This feature is coming soon!', { icon: '🚧' }); }} className="text-secondary-fixed-dim hover:bg-on-secondary-fixed-variant/50 hover:bg-on-secondary-fixed-variant transition-colors duration-200 rounded-lg px-4 py-3 flex items-center gap-3 font-label-md text-label-md">
           <span className="material-symbols-outlined">edit_note</span>
           Drafts
         </a>
-        <a href="#" className="text-secondary-fixed-dim hover:bg-on-secondary-fixed-variant/50 hover:bg-on-secondary-fixed-variant transition-colors duration-200 rounded-lg px-4 py-3 flex items-center gap-3 font-label-md text-label-md">
+        <a href="#" onClick={(e) => { e.preventDefault(); toast('This feature is coming soon!', { icon: '🚧' }); }} className="text-secondary-fixed-dim hover:bg-on-secondary-fixed-variant/50 hover:bg-on-secondary-fixed-variant transition-colors duration-200 rounded-lg px-4 py-3 flex items-center gap-3 font-label-md text-label-md">
           <span className="material-symbols-outlined">verified</span>
           Approved
         </a>
-        <a href="#" className="text-secondary-fixed-dim hover:bg-on-secondary-fixed-variant/50 hover:bg-on-secondary-fixed-variant transition-colors duration-200 rounded-lg px-4 py-3 flex items-center gap-3 font-label-md text-label-md">
+        <a href="#" onClick={(e) => { e.preventDefault(); toast('This feature is coming soon!', { icon: '🚧' }); }} className="text-secondary-fixed-dim hover:bg-on-secondary-fixed-variant/50 hover:bg-on-secondary-fixed-variant transition-colors duration-200 rounded-lg px-4 py-3 flex items-center gap-3 font-label-md text-label-md">
           <span className="material-symbols-outlined">send</span>
           Sent
         </a>
-        <a href="#" className="text-secondary-fixed-dim hover:bg-on-secondary-fixed-variant/50 hover:bg-on-secondary-fixed-variant transition-colors duration-200 rounded-lg px-4 py-3 flex items-center gap-3 font-label-md text-label-md">
+        <a href="#" onClick={(e) => { e.preventDefault(); toast('This feature is coming soon!', { icon: '🚧' }); }} className="text-secondary-fixed-dim hover:bg-on-secondary-fixed-variant/50 hover:bg-on-secondary-fixed-variant transition-colors duration-200 rounded-lg px-4 py-3 flex items-center gap-3 font-label-md text-label-md">
           <span className="material-symbols-outlined">archive</span>
           Archive
         </a>
-        <a href="#" className="text-secondary-fixed-dim hover:bg-on-secondary-fixed-variant/50 hover:bg-on-secondary-fixed-variant transition-colors duration-200 rounded-lg px-4 py-3 flex items-center gap-3 font-label-md text-label-md">
+        <a href="#" onClick={(e) => { e.preventDefault(); toast('This feature is coming soon!', { icon: '🚧' }); }} className="text-secondary-fixed-dim hover:bg-on-secondary-fixed-variant/50 hover:bg-on-secondary-fixed-variant transition-colors duration-200 rounded-lg px-4 py-3 flex items-center gap-3 font-label-md text-label-md">
           <span className="material-symbols-outlined">delete</span>
           Trash
         </a>
@@ -53,11 +54,11 @@ export default function Sidebar() {
 
       {/* Footer Tabs */}
       <div className="p-4 flex flex-col gap-2 border-t border-inverse-surface mt-auto">
-        <a href="#" className="text-secondary-fixed-dim hover:bg-on-secondary-fixed-variant/50 hover:bg-on-secondary-fixed-variant transition-colors duration-200 rounded-lg px-4 py-3 flex items-center gap-3 font-label-md text-label-md">
+        <a href="#" onClick={(e) => { e.preventDefault(); toast('This feature is coming soon!', { icon: '🚧' }); }} className="text-secondary-fixed-dim hover:bg-on-secondary-fixed-variant/50 hover:bg-on-secondary-fixed-variant transition-colors duration-200 rounded-lg px-4 py-3 flex items-center gap-3 font-label-md text-label-md">
           <span className="material-symbols-outlined">help</span>
           Help
         </a>
-        <a href="#" className="text-secondary-fixed-dim hover:bg-on-secondary-fixed-variant/50 hover:bg-on-secondary-fixed-variant transition-colors duration-200 rounded-lg px-4 py-3 flex items-center gap-3 font-label-md text-label-md">
+        <a href="#" onClick={(e) => { e.preventDefault(); toast('This feature is coming soon!', { icon: '🚧' }); }} className="text-secondary-fixed-dim hover:bg-on-secondary-fixed-variant/50 hover:bg-on-secondary-fixed-variant transition-colors duration-200 rounded-lg px-4 py-3 flex items-center gap-3 font-label-md text-label-md">
           <span className="material-symbols-outlined">logout</span>
           Logout
         </a>

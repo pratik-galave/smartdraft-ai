@@ -75,6 +75,7 @@ def fetch_unread_emails(service, max_results=5):
         .list(
             userId="me",
             labelIds=["INBOX", "UNREAD"],
+            q="is:unread -category:promotions -category:social -category:updates",
             maxResults=max_results,
         )
         .execute()

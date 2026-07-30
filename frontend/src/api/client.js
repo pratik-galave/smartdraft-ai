@@ -18,7 +18,7 @@ async function request(endpoint, options = {}) {
 }
 
 export const api = {
-  getEmails: () => request('/emails?source=gmail'),
+  getEmails: (filterType = 'actionable') => request(`/emails?source=gmail&filter_type=${filterType}`),
   
   generateDraft: (id) => request(`/emails/${id}/generate`, {
     method: 'POST',

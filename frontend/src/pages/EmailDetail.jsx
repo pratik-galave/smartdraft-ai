@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
+import toast from 'react-hot-toast';
 import OriginalEmailCard from '../components/detail/OriginalEmailCard';
 import AIDraftCard from '../components/detail/AIDraftCard';
 import QualityScoresPanel from '../components/detail/QualityScoresPanel';
@@ -20,6 +21,7 @@ export default function EmailDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -84,6 +86,7 @@ export default function EmailDetail() {
 
   const handleGenerate = async () => {
     setIsRegenerating(true);
+    const loadingToast = toast.loading('Generating draft...');
     try {
       const response = await api.generateDraft(id);
       if (response.reply) {
@@ -102,9 +105,11 @@ export default function EmailDetail() {
           (response.scores.relevance + response.scores.tone + response.scores.completeness + response.scores.accuracy + response.scores.conciseness) / 5 * 20
         );
       }
+      toast.success('Draft generated', { id: loadingToast });
     } catch (err) {
       console.error(err);
       setError('Failed to generate draft.');
+      toast.error('Failed to generate draft', { id: loadingToast });
     } finally {
       setIsRegenerating(false);
     }
@@ -115,6 +120,7 @@ export default function EmailDetail() {
       return handleGenerate();
     }
     setIsRegenerating(true);
+    const loadingToast = toast.loading('Regenerating draft...');
     try {
       const response = await api.regenerateDraft(id, customInstructions);
       if (response.reply) {
@@ -133,9 +139,11 @@ export default function EmailDetail() {
           (response.scores.relevance + response.scores.tone + response.scores.completeness + response.scores.accuracy + response.scores.conciseness) / 5 * 20
         );
       }
+      toast.success('Draft regenerated', { id: loadingToast });
     } catch (err) {
       console.error(err);
       setError('Failed to regenerate draft.');
+      toast.error('Failed to regenerate draft', { id: loadingToast });
     } finally {
       setIsRegenerating(false);
     }
@@ -150,27 +158,44 @@ export default function EmailDetail() {
   };
 
   const handleApproveAndSend = async () => {
+    setIsSubmitting(true);
+    const loadingToast = toast.loading('Sending email...');
     try {
       const currentDraftText = drafts.length > 0 ? drafts[drafts.length - 1].text : '';
       await api.approveEmail(id, 'send', currentDraftText);
+      toast.success('Email sent successfully!', { id: loadingToast });
       setIsModalOpen(false);
       navigate('/');
     } catch (err) {
       console.error(err);
       setError('Failed to send email.');
+      toast.error('Failed to send email.', { id: loadingToast });
       setIsModalOpen(false);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleSaveDraft = async () => {
+    setIsSubmitting(true);
+    const loadingToast = toast.loading('Saving draft...');
     try {
       const currentDraftText = drafts.length > 0 ? drafts[drafts.length - 1].text : '';
       await api.approveEmail(id, 'draft', currentDraftText);
+      toast.success('Draft saved successfully!', { id: loadingToast });
       navigate('/');
     } catch (err) {
       console.error(err);
       setError('Failed to save draft.');
+      toast.error('Failed to save draft.', { id: loadingToast });
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const handleDiscard = () => {
+    toast.success('Draft discarded');
+    navigate('/');
   };
 
   if (isLoading) {
@@ -242,6 +267,8 @@ export default function EmailDetail() {
       <BottomActionBar 
         onSaveDraft={handleSaveDraft}
         onApproveAndSend={() => setIsModalOpen(true)}
+        onDiscard={handleDiscard}
+        isSubmitting={isSubmitting}
       />
 
       <SendConfirmModal 

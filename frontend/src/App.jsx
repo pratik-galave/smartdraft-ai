@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import Inbox from './pages/Inbox';
@@ -15,7 +16,7 @@ function App() {
           <div className="absolute bottom-[-20%] right-[-10%] w-[40%] h-[40%] rounded-full bg-tertiary-container/5 blur-[100px]"></div>
           <div className="absolute inset-0 bg-noise"></div>
         </div>
-
+        <Toaster position="top-right" toastOptions={{ className: 'font-body-sm text-body-sm' }} />
         <Sidebar />
         <main className="ml-0 md:ml-[280px] w-full md:w-[calc(100%-280px)] min-h-screen flex flex-col relative bg-background">
           <TopBar />

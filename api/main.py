@@ -84,11 +84,11 @@ def get_status():
 
 
 @app.get("/emails")
-def get_emails(source: Optional[str] = Query(None), current_user: dict = Depends(get_current_user)):
+def get_emails(source: Optional[str] = Query(None), filter_type: Optional[str] = Query("actionable")):
     try:
         if source == "gmail":
             service = get_service()
-            emails = fetch_unread_emails(service, max_results=10)
+            emails = fetch_unread_emails(service, max_results=500)
         else:
             emails = load_json("data/emails.json")
             
@@ -97,22 +97,52 @@ def get_emails(source: Optional[str] = Query(None), current_user: dict = Depends
         scores_data = {s["id"]: s for s in load_json("data/scores.json")}
         
         enriched_emails = []
+        new_replies = False
+        
         for e in emails:
             e_id = e["id"]
-            reply_data = replies_data.get(e_id, {})
+            reply_data = replies_data.get(e_id)
+            
+            if not reply_data:
+                # Triage immediately after ingestion
+                triage = should_reply(e)
+                reply_data = {
+                    "id": e_id,
+                    "status": "PENDING" if triage["needs_reply"] else "SKIPPED",
+                    "subject": e.get("subject", ""),
+                    "generated_reply": None,
+                    "triage_reason": triage["triage_reason"]
+                }
+                replies_data[e_id] = reply_data
+                new_replies = True
+                
             e["reply_status"] = reply_data.get("status")
             e["generated_reply"] = reply_data.get("generated_reply")
+            e["triage_reason"] = reply_data.get("triage_reason")
+            e["needs_reply"] = reply_data.get("status") != "SKIPPED"
             
             score = scores_data.get(e_id)
             if score and "overall" in score:
-                # Convert 1-5 score to 0-100 percentage
                 e["quality_score"] = int(score["overall"] * 20)
             else:
                 e["quality_score"] = None
                 
             enriched_emails.append(e)
+
+        if new_replies:
+            os.makedirs("data", exist_ok=True)
+            with open("data/replies.json", "w", encoding="utf-8") as f:
+                json.dump(list(replies_data.values()), f, indent=4, ensure_ascii=False)
+                
+        # Filter based on filter_type
+        if filter_type == "actionable":
+            filtered_emails = [e for e in enriched_emails if e.get("needs_reply") == True and e.get("reply_status") != "SKIPPED"]
+        elif filter_type == "skipped":
+            filtered_emails = [e for e in enriched_emails if e.get("needs_reply") == False or e.get("reply_status") == "SKIPPED"]
+        else:
+            filtered_emails = enriched_emails
             
-        return enriched_emails
+        return filtered_emails
     except Exception as e:
         print(f"Error fetching emails: {e}")
         raise HTTPException(status_code=500, detail={"error": "Failed to fetch emails", "message": str(e)})
@@ -133,12 +163,13 @@ def _get_email(email_id: str):
 
 
 @app.post("/emails/{email_id}/generate")
-def generate(email_id: str, current_user: dict = Depends(get_current_user)):
+def generate(email_id: str):
     email = _get_email(email_id)
     
     try:
-        if not should_reply(email):
-            return {"status": "SKIPPED", "reply": None, "scores": None}
+        triage = should_reply(email)
+        if not triage["needs_reply"]:
+            return {"status": "SKIPPED", "reply": None, "scores": None, "triage_reason": triage["triage_reason"]}
 
         reply = generate_reply(email)
         scores = evaluate_single_reply(email, reply)
@@ -154,12 +185,13 @@ def generate(email_id: str, current_user: dict = Depends(get_current_user)):
 
 
 @app.post("/emails/{email_id}/regenerate")
-def regenerate(email_id: str, request: RegenerateRequest, current_user: dict = Depends(get_current_user)):
+def regenerate(email_id: str, request: RegenerateRequest):
     email = _get_email(email_id)
     
     try:
-        if not should_reply(email):
-            return {"status": "SKIPPED", "reply": None, "scores": None}
+        triage = should_reply(email)
+        if not triage["needs_reply"]:
+            return {"status": "SKIPPED", "reply": None, "scores": None, "triage_reason": triage["triage_reason"]}
 
         reply = generate_reply(email, instruction=request.instruction)
         scores = evaluate_single_reply(email, reply)
@@ -175,7 +207,7 @@ def regenerate(email_id: str, request: RegenerateRequest, current_user: dict = D
 
 
 @app.post("/emails/{email_id}/approve")
-def approve(email_id: str, request: ApproveRequest, current_user: dict = Depends(get_current_user)):
+def approve(email_id: str, request: ApproveRequest):
     email = _get_email(email_id)
     
     try:
@@ -206,7 +238,7 @@ def approve(email_id: str, request: ApproveRequest, current_user: dict = Depends
 
 
 @app.get("/emails/{email_id}/scores")
-def get_scores(email_id: str, current_user: dict = Depends(get_current_user)):
+def get_scores(email_id: str):
     scores = load_json("data/scores.json")
     for s in scores:
         if s["id"] == email_id:

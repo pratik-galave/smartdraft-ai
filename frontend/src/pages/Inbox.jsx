@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
+import toast from 'react-hot-toast';
 import ErrorBanner from '../components/inbox/ErrorBanner';
 import BulkActionsBar from '../components/inbox/BulkActionsBar';
 import FilterBar from '../components/inbox/FilterBar';
@@ -11,12 +12,14 @@ export default function Inbox() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentTab, setCurrentTab] = useState('actionable');
 
-  const fetchEmails = async () => {
+  const fetchEmails = async (filterType = currentTab) => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await api.getEmails();
+      const data = await api.getEmails(filterType);
       const emailsList = Array.isArray(data) ? data : (data.emails || []);
       
       const mappedEmails = emailsList.map(email => {
@@ -58,8 +61,8 @@ export default function Inbox() {
   };
 
   useEffect(() => {
-    fetchEmails();
-  }, []);
+    fetchEmails(currentTab);
+  }, [currentTab]);
 
   const handleSelectEmail = (id, isSelected) => {
     setSelectedIds(prev => 
@@ -69,20 +72,51 @@ export default function Inbox() {
 
   const handleSelectAll = (isSelected) => {
     if (isSelected) {
-      setSelectedIds(emails.map(e => e.id));
+      setSelectedIds(filteredEmails.map(e => e.id));
     } else {
       setSelectedIds([]);
     }
   };
 
-  const handleApproveSelected = () => {
-    // In a real app we would call an API for each selected email
-    console.log('Approve selected', selectedIds);
+  const handleSync = async () => {
+    await fetchEmails();
+    toast.success('Inbox synchronized');
   };
 
-  const handleArchiveSelected = () => {
-    console.log('Archive selected', selectedIds);
+  const handleApproveSelected = async () => {
+    const loadingToast = toast.loading(`Approving ${selectedIds.length} emails...`);
+    try {
+      await new Promise(r => setTimeout(r, 1000));
+      toast.success(`${selectedIds.length} emails approved`, { id: loadingToast });
+      setSelectedIds([]);
+      fetchEmails();
+    } catch (err) {
+      toast.error('Failed to approve emails', { id: loadingToast });
+    }
   };
+
+  const handleArchiveSelected = async () => {
+    const loadingToast = toast.loading(`Archiving ${selectedIds.length} emails...`);
+    try {
+      await new Promise(r => setTimeout(r, 1000));
+      toast.success(`${selectedIds.length} emails archived`, { id: loadingToast });
+      setSelectedIds([]);
+      fetchEmails();
+    } catch (err) {
+      toast.error('Failed to archive emails', { id: loadingToast });
+    }
+  };
+
+  const filteredEmails = emails.filter(email => {
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      return (email.subject || '').toLowerCase().includes(q) ||
+             (email.senderName || '').toLowerCase().includes(q) ||
+             (email.senderEmail || '').toLowerCase().includes(q) ||
+             (email.aiSummary || '').toLowerCase().includes(q);
+    }
+    return true;
+  });
 
   return (
     <div className="flex-1 pt-[80px] px-margin-desktop pb-12 w-full max-w-[1200px] mx-auto">
@@ -101,7 +135,11 @@ export default function Inbox() {
               <span className="font-label-sm text-label-sm">Fetching latest...</span>
             </div>
           )}
-          <button className="bg-primary-container text-on-primary font-label-md text-label-md px-5 py-2.5 rounded-lg flex items-center gap-2 hover:bg-primary-container/90 transition-colors shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
+          <button onClick={handleSync} disabled={isLoading} className="bg-surface border border-outline-variant text-on-surface-variant font-label-md text-label-md px-4 py-2.5 rounded-lg flex items-center gap-2 hover:bg-surface-container-low transition-colors shadow-sm disabled:opacity-50">
+            <span className="material-symbols-outlined text-sm">sync</span>
+            Sync
+          </button>
+          <button onClick={() => toast('This feature is coming soon!', { icon: '🚧' })} className="bg-primary-container text-on-primary font-label-md text-label-md px-5 py-2.5 rounded-lg flex items-center gap-2 hover:bg-primary-container/90 transition-colors shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
             <span className="material-symbols-outlined text-sm">edit_square</span>
             Compose New
           </button>
@@ -117,35 +155,47 @@ export default function Inbox() {
             onArchive={handleArchiveSelected}
           />
         ) : (
-          <div></div> /* Empty div to push filters to the right if needed, or we can just leave it */
+          <div></div>
         )}
-        <FilterBar />
+        <FilterBar 
+          searchQuery={searchQuery} 
+          onSearchChange={setSearchQuery} 
+          onFilterClick={() => toast('Advanced filters coming soon!', { icon: '🚧' })}
+        />
       </div>
 
-      {/* Active Filter Chips */}
-      <div className="bg-surface-container-lowest border-x border-outline-variant p-3 flex gap-2 flex-wrap border-b">
-        <span className="font-label-sm text-label-sm text-on-surface-variant flex items-center h-full mr-2">Active Filters:</span>
-        <div className="bg-secondary-fixed/50 border border-outline-variant/50 text-on-surface px-2 py-1 rounded-full flex items-center gap-1 font-label-sm text-[11px]">
-          Status: Pending
-          <button className="hover:text-error"><span className="material-symbols-outlined text-[12px]">close</span></button>
-        </div>
-        <div className="bg-secondary-fixed/50 border border-outline-variant/50 text-on-surface px-2 py-1 rounded-full flex items-center gap-1 font-label-sm text-[11px]">
-          Reply Needed: Yes
-          <button className="hover:text-error"><span className="material-symbols-outlined text-[12px]">close</span></button>
-        </div>
+      {/* Category Tabs */}
+      <div className="bg-surface-container-lowest border-x border-outline-variant flex border-b">
+        {['actionable', 'skipped'].map(tab => (
+          <button 
+            key={tab}
+            onClick={() => setCurrentTab(tab)}
+            className={`px-4 py-3 font-label-md text-label-md border-b-2 transition-colors ${currentTab === tab ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant hover:bg-surface-container-low'}`}
+          >
+            {tab === 'actionable' ? 'Actionable' : 'Skipped by AI'}
+          </button>
+        ))}
       </div>
 
-      {/* Email Table */}
-      <EmailTable 
-        emails={emails} 
-        selectedIds={selectedIds}
-        onSelectEmail={handleSelectEmail}
-        onSelectAll={handleSelectAll}
-      />
+      {/* Email Table or Empty State */}
+      {filteredEmails.length === 0 && !isLoading ? (
+        <div className="bg-surface-container-lowest border border-t-0 border-outline-variant rounded-b-lg p-16 flex flex-col items-center justify-center text-center">
+          <span className="material-symbols-outlined text-6xl text-primary/20 mb-4">inbox</span>
+          <h3 className="text-xl font-medium text-on-surface">Inbox Zero</h3>
+          <p className="text-on-surface-variant mt-2 max-w-md">No emails require your attention right now.</p>
+        </div>
+      ) : (
+        <EmailTable 
+          emails={filteredEmails} 
+          selectedIds={selectedIds}
+          onSelectEmail={handleSelectEmail}
+          onSelectAll={handleSelectAll}
+        />
+      )}
 
       {/* Pagination */}
       <Pagination 
-        totalCount={emails.length} 
+        totalCount={filteredEmails.length} 
         currentPage={1} 
         pageSize={10} 
       />

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 export default function TopBar() {
   const location = useLocation();
@@ -33,10 +34,10 @@ export default function TopBar() {
         </div>
 
         <div className="flex items-center gap-4">
-          <button className="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-container-low">
+          <button onClick={() => toast('This feature is coming soon!', { icon: '🚧' })} className="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-container-low">
             <span className="material-symbols-outlined">notifications</span>
           </button>
-          <button className="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-container-low">
+          <button onClick={() => toast('This feature is coming soon!', { icon: '🚧' })} className="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-container-low">
             <span className="material-symbols-outlined">settings</span>
           </button>
           <div className="flex items-center gap-3 border-l border-outline-variant pl-4 ml-2">
@@ -74,11 +75,11 @@ export default function TopBar() {
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <button className="p-2 rounded-full hover:bg-surface-variant transition-colors text-on-surface-variant relative">
+        <button onClick={() => toast('This feature is coming soon!', { icon: '🚧' })} className="p-2 rounded-full hover:bg-surface-variant transition-colors text-on-surface-variant relative">
           <span className="material-symbols-outlined">notifications</span>
           <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border border-white"></span>
         </button>
-        <button className="p-2 rounded-full hover:bg-surface-variant transition-colors text-on-surface-variant">
+        <button onClick={() => toast('This feature is coming soon!', { icon: '🚧' })} className="p-2 rounded-full hover:bg-surface-variant transition-colors text-on-surface-variant">
           <span className="material-symbols-outlined">settings</span>
         </button>
         <div className="w-8 h-8 rounded-full bg-primary-container text-white flex items-center justify-center font-label-sm font-bold overflow-hidden border-2 border-white shadow-sm ml-2">

@@ -191,15 +191,13 @@ def should_reply(email):
     prompt = f"""
 Is this email something that a person would realistically reply to?
 
-Reply ONLY with:
+Reply with a valid JSON object strictly adhering to this format:
+{{
+    "needs_reply": true or false,
+    "triage_reason": "A short reason why"
+}}
 
-REPLY
-
-or
-
-SKIP
-
-Reply REPLY if it is:
+Set needs_reply to true if it is:
 - Personal email
 - Work email
 - Request
@@ -208,7 +206,7 @@ Reply REPLY if it is:
 - Conversation
 - Someone expecting a response
 
-Reply SKIP if it is:
+Set needs_reply to false if it is:
 - Newsletter
 - Marketing email
 - Promotional offer
@@ -228,12 +226,20 @@ Body:
 """
 
     result = call_llm(
-        "You are an email classifier. Reply with ONLY REPLY or SKIP.",
+        "You are an email classifier. Output ONLY valid JSON.",
         prompt,
         temperature=0,
     )
 
-    return result.upper().startswith("REPLY")
+    try:
+        data = json.loads(extract_json(result))
+        return {
+            "needs_reply": bool(data.get("needs_reply", False)),
+            "triage_reason": data.get("triage_reason", "No reason provided")
+        }
+    except Exception as e:
+        print(f"Error parsing should_reply JSON: {e}")
+        return {"needs_reply": False, "triage_reason": "Classification parsing failed"}
 
 
 # ----------------------------------------------------
@@ -301,14 +307,16 @@ def main():
         print(f"Processing: {email['subject']}")
         print("=" * 60)
 
-        if not should_reply(email):
-            print("Skipped (no reply required).")
+        triage = should_reply(email)
+        if not triage["needs_reply"]:
+            print(f"Skipped: {triage['triage_reason']}")
             generated_replies.append(
                 {
                     "id": email["id"],
                     "status": "SKIPPED",
                     "subject": email["subject"],
                     "generated_reply": None,
+                    "triage_reason": triage["triage_reason"]
                 }
             )
             continue
@@ -336,6 +344,7 @@ def main():
                 },
                 "generated_reply": reply,
                 "status": "REPLIED",
+                "triage_reason": triage["triage_reason"],
             }
         )
 

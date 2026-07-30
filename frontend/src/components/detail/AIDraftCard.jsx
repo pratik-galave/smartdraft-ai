@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 
 export default function AIDraftCard({ drafts, onRegenerate, isRegenerating, onDraftChange }) {
   const [activeTab, setActiveTab] = useState(drafts.length - 1);
@@ -10,6 +11,13 @@ export default function AIDraftCard({ drafts, onRegenerate, isRegenerating, onDr
   const handleRegenerate = () => {
     onRegenerate(customInstructions);
     setCustomInstructions('');
+  };
+
+  const handleCopy = () => {
+    if (currentDraft.text) {
+      navigator.clipboard.writeText(currentDraft.text);
+      toast.success('Draft copied to clipboard!');
+    }
   };
 
   return (
@@ -43,9 +51,18 @@ export default function AIDraftCard({ drafts, onRegenerate, isRegenerating, onDr
             </button>
           ))}
         </div>
-        <span className="font-body-sm text-body-sm text-secondary italic">
-          {currentDraft.note || `v${activeTab + 1}`}
-        </span>
+        <div className="flex items-center gap-4">
+          <span className="font-body-sm text-body-sm text-secondary italic">
+            {currentDraft.note || `v${activeTab + 1}`}
+          </span>
+          <button 
+            onClick={handleCopy}
+            className="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center p-1.5 rounded hover:bg-white"
+            title="Copy draft"
+          >
+            <span className="material-symbols-outlined text-[16px]">content_copy</span>
+          </button>
+        </div>
       </div>
       
       <div className="p-6 flex-1 flex flex-col">
